@@ -27,6 +27,8 @@ if __name__ == "__main__":
 
     avail_df = pd.DataFrame(avail_table, columns=["GPU model", "available", "notes"])
     avail_df = avail_df.set_index(["GPU model"])
+    # notes only exist in verbose mode
+    avail_df.drop(columns="notes", inplace=True)
 
     big_df = pd.DataFrame()
     for df in [online_df, avail_df]:
