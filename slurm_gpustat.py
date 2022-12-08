@@ -534,6 +534,11 @@ def gpu_usage(resources: dict, partition: Optional[str] = None) -> dict:
        resource_flag = "gres"
     else:
        resource_flag = "tres-per-node"
+    if int(slurm_version[0:2]) >= 21:
+        gpu_identifier = 'gres:gpu'
+    else:
+        gpu_identifier = 'gpu'
+
     cmd = f"squeue -O {resource_flag}:100,nodelist:100,username:100,jobid:100 --noheader"
     if partition:
         cmd += f" --partition={partition}"
@@ -543,7 +548,7 @@ def gpu_usage(resources: dict, partition: Optional[str] = None) -> dict:
     for row in rows:
         tokens = row.split()
         # ignore pending jobs
-        if len(tokens) < 4 or 'gpu' not in tokens[0]:
+        if len(tokens) < 4 or not tokens[0].startswith(gpu_identifier):
             continue
         gpu_count_str, node_str, user, jobid = tokens
         gpu_count_tokens = gpu_count_str.split(":")
@@ -551,9 +556,8 @@ def gpu_usage(resources: dict, partition: Optional[str] = None) -> dict:
             gpu_count_tokens.append("1")
         num_gpus = int(gpu_count_tokens[-1])
         # get detailed job information, to check if using bash
-        detailed_job_info = {row.split('=')[0].strip(): row.split('=')[1].strip()
-                             for row in parse_cmd(detailed_job_cmd % jobid, split=True) if '=' in row}
-        is_bash = any([x == detailed_job_info['Command'] for x in INTERACTIVE_CMDS])
+        detailed_output = parse_cmd(detailed_job_cmd % jobid, split=False)
+        is_bash = any([f'Command={x}\n' in detailed_output for x in INTERACTIVE_CMDS])
         num_bash_gpus = num_gpus * is_bash
         node_names = parse_node_names(node_str)
         for node_name in node_names:
@@ -562,12 +566,12 @@ def gpu_usage(resources: dict, partition: Optional[str] = None) -> dict:
             if node_name not in resources:
                 continue
             node_gpu_types = [x["type"] for x in resources[node_name]]
-            if len(gpu_count_tokens) == 2:
+            if (len(gpu_count_tokens) == 2) or (int(slurm_version[0:2]) >= 21):
                 gpu_type = None
             elif len(gpu_count_tokens) == 3:
                 gpu_type = gpu_count_tokens[1]
                 if gpu_type=='gpu':
-                    gpu_type = detailed_job_info['JOB_GRES'].split(':')[1]
+                    gpu_type = detailed_output['JOB_GRES'].split(':')[1]
             if gpu_type is None:
                 if len(node_gpu_types) != 1:
                     gpu_type = sorted(
