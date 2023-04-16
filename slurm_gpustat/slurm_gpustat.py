@@ -660,7 +660,7 @@ def available(resources: dict = None, states: dict = None, verbose: bool = False
 
 
 @beartype
-def all_info(color: int, verbose: bool, partition: Optional[str] = None):
+def all_info(verbose: bool, partition: Optional[str] = None):
     """Print a collection of summaries about SLURM gpu usage, including: all nodes
     managed by the cluster, nodes that are currently accesible and gpu usage for each
     active user.
@@ -669,15 +669,7 @@ def all_info(color: int, verbose: bool, partition: Optional[str] = None):
         partition: the partition/queue (or multiple, comma separated) of interest.
             By default None, which queries all available partitions.
     """
-    divider, slurm_str = DIVIDER, "SLURM"
-    if color:
-        colors = sns.color_palette("hls", 8).as_hex()
-        divider = colored.stylize(divider, colored.fg(colors[7]))
-        slurm_str = colored.stylize(slurm_str, colored.fg(colors[0]))
-    print(divider)
-    if verbose:
-        print(f"Under {slurm_str} management")
-        print(divider)
+    print(DIVIDER)
     resources = parse_all_gpus(partition=partition)
     states = node_states(partition=partition)
 
@@ -724,7 +716,7 @@ def all_info(color: int, verbose: bool, partition: Optional[str] = None):
             big_df = big_df.merge(df, how='outer', left_index=True, right_index=True)
         big_df = big_df.sort_values(by="all", ascending=False)
         print(tabulate(big_df, headers=(["GPU model", "all", "online", "available"])))
-        print(divider)
+        print(DIVIDER)
     in_use_table = in_use(resources, partition=partition,verbose=verbose)
     print(tabulate(in_use_table, showindex=False, headers="firstrow"))
 
@@ -749,13 +741,12 @@ def main():
                         help="the location where the daemon PID file will be stored")
     parser.add_argument("--daemon_log_interval", type=int, default=43200,
                         help="time interval (secs) between stat logging (default 12 hrs)")
-    parser.add_argument("--color", type=int, default=1, help="color output")
     parser.add_argument("--verbose", action="store_true",
                         help="provide a more detailed breakdown of resources")
     args = parser.parse_args()
 
     if args.action == "current":
-        all_info(color=args.color, verbose=args.verbose, partition=args.partition)
+        all_info(verbose=args.verbose, partition=args.partition)
     elif args.action == "history":
         data = GPUStatDaemon.deserialize_usage(args.log_path)
         historical_summary(data)
