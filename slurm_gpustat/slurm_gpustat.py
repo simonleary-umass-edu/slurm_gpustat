@@ -322,24 +322,17 @@ def gpu_usage(resources: dict, partition: Optional[str] = None) -> dict:
             if node_name not in resources:
                 continue
             node_gpu_types = [x["type"] for x in resources[node_name]]
-            if len(gpu_count_tokens) == 2:
-                gpu_type = None
-            elif len(gpu_count_tokens) == 3:
-                gpu_type = gpu_count_tokens[1]
-                if gpu_type=='gpu':
-                    gpu_type = detailed_job_info['JOB_GRES'].split(':')[1]
-            if gpu_type is None:
-                if len(node_gpu_types) != 1:
-                    gpu_type = sorted(
-                        resources[node_name],
-                        key=lambda k: k['count'],
-                        reverse=True
-                    )[0]['type']
-                    msg = (f"cannot determine node gpu type for {user} on {node_name}"
-                           f" (guessing {gpu_type})")
-                    print(f"WARNING >>> {msg}")
-                else:
-                    gpu_type = node_gpu_types[0]
+            if len(node_gpu_types) != 1:
+                gpu_type = sorted(
+                    resources[node_name],
+                    key=lambda k: k['count'],
+                    reverse=True
+                )[0]['type']
+                msg = (f"cannot determine node gpu type for {user} on {node_name}"
+                        f" (guessing {gpu_type})")
+                print(f"WARNING >>> {msg}")
+            else:
+                gpu_type = node_gpu_types[0]
             if gpu_type in usage[user]:
                 usage[user][gpu_type][node_name]['n_gpu'] += num_gpus
 
