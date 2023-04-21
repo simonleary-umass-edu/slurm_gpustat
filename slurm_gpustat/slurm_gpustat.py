@@ -483,8 +483,8 @@ def all_info(verbose: bool, partition: Optional[str] = None):
         big_df = big_df.sort_values(by="all", ascending=False)
         print(tabulate(big_df, headers=(["GPU model", "all", "online", "available"])))
         print(DIVIDER)
-    in_use_table = in_use(resources, partition=partition,verbose=verbose)
-    print(tabulate(in_use_table, showindex=False, headers="firstrow"))
+    # in_use_table = in_use(resources, partition=partition,verbose=verbose)
+    # print(tabulate(in_use_table, showindex=False, headers="firstrow"))
 
 
 def main():
